@@ -8,6 +8,22 @@ This application is developed with React and calls to the reconciliation service
 It can be used at:
 https://reconciliation-api.github.io/testbench/1.0
 
+## Local fork notes
+
+This checkout (`mpilhlt/reconc-testbench`, `master`) carries one patch not yet upstream:
+
+- **`src/DataExtensionTab.jsx`** (commit `fd7697b`): the 1.0-draft `data-extension-response.json`
+  schema changed `rows` from an id-keyed object (0.1/0.2 shape) to an array of
+  `{id, properties:[{id, values}]}` objects, but `renderQueryResults()` still read
+  `rows[entityId][propertyId]` unconditionally - so a spec-compliant 1.0-draft server's Extend
+  tab always failed with "Missing rows.\<id\> object in the response", even though
+  `validateServiceResponse()` would have passed the response (its errors are just never surfaced
+  - `renderResponseValidationErrors()` is a no-op stub). Patched to detect the shape
+  (`Array.isArray(rows)`) and handle both.
+  **TODO: file an issue (and/or PR) against `reconciliation-api/testbench` upstream** for this -
+  it's a real bug affecting any correctly-implemented 1.0-draft service, not specific to this
+  fork.
+
 
 
 ## Available Scripts
