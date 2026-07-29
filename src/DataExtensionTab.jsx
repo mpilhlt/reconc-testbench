@@ -99,6 +99,28 @@ export default class DataExtensionTab extends React.Component {
         return <div/>;
   }
 
+  // "rows" is shaped differently depending on protocol version: an id-keyed object of
+  // property-id-keyed value arrays in 0.1/0.2, an array of {id, properties: [{id, values}]}
+  // objects in 1.0-draft (see data-extension-response.json in each spec version). This
+  // component predates the 1.0-draft shape change and only ever handled the older object
+  // form; these two helpers normalize both shapes to the same lookup so a spec-compliant
+  // 1.0-draft response doesn't get misreported as "missing" data it actually has.
+  findEntityRow(rows, entityId) {
+        if (Array.isArray(rows)) {
+             const row = rows.find(r => r && r.id === entityId);
+             return row ? row.properties : undefined;
+        }
+        return rows[entityId];
+  }
+
+  findPropertyValues(entityRow, propertyId) {
+        if (Array.isArray(entityRow)) {
+             const prop = entityRow.find(p => p && p.id === propertyId);
+             return prop ? prop.values : undefined;
+        }
+        return entityRow[propertyId];
+  }
+
   renderQueryResults() {
         if (this.state.extendResults === 'fetching') {
              return (<div className="resultsPlaceholder">Querying the service...</div>);
@@ -110,13 +132,14 @@ export default class DataExtensionTab extends React.Component {
              if (this.state.extendResults.rows === undefined) {
                   return (<span className="resultsPlaceholder">No <code>rows</code> attribute in the response.</span>);
              }
-             if (this.state.extendResults.rows[this.state.entity.id] === undefined) {
+             const entityRow = this.findEntityRow(this.state.extendResults.rows, this.state.entity.id);
+             if (entityRow === undefined) {
                   return (<span className="resultsPlaceholder">Missing <code>rows.{this.state.entity.id}</code> object in the response.</span>);
              }
-             if (this.state.extendResults.rows[this.state.entity.id][this.state.property.id] === undefined) {
+             const values = this.findPropertyValues(entityRow, this.state.property.id);
+             if (values === undefined) {
                   return (<span className="resultsPlaceholder">Missing <code>rows.{this.state.entity.id}{this.state.property.id}</code> object in the response.</span>);
              }
-             const values = this.state.extendResults.rows[this.state.entity.id][this.state.property.id];
              if (values.length === 0) {
                   return (<span className="noResults">No results</span>);
              }
